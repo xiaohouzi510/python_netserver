@@ -187,6 +187,6 @@ if __name__ == '__main__':
 	g_stNetThread.start()
 	#启动定时器线程
 	g_stTimerThread.start()
-	print("------------server start wait client connect----------------")
+
 	#工作线程等待
 	g_stWorkThread.join()

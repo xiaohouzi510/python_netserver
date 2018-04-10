@@ -20,6 +20,8 @@ class MsgQType:
 	eMsgNetSock  = 1
 	#定时器消息
 	eMsgTimer    = 2
+	#nc、telnet 消息
+	eMsgNcTelnet = 3
 
 #消息体
 class PressMessage:
@@ -49,29 +51,31 @@ class MessageQueue:
 		#个数
 		self.m_iCount 	 = 0 
 
+#消息共公函数
+def CommonMsg(stQ,eType,sData):
+	stMsg = PressMessage()	
+	stMsg.m_eType  = eType
+	stMsg.m_stData = sData 
+	stQ.PushMsg(stMsg)	
+
 #NetServer 有网络消息
 def ForwardSockMsg(stSockMsg):
 	#stMsg = SockMessage 
-	stQ   = g_stMsgQ[stSockMsg.m_iId]
-	stMsg = PressMessage()	
-	stMsg.m_eType  = MsgQType.eMsgNetSock
-	stMsg.m_stData = stSockMsg 
-	stQ.PushMsg(stMsg)	
+	CommonMsg(g_stMsgQ[stSockMsg.m_iId],MsgQType.eMsgNetSock,stSockMsg)
 
 #定时器消息
 #param stTimeNode = TimeMgr.TimeNode 
 def ForwardTimerMsg(stTimeNode):
 	iId = stTimeNode.m_iId
-	#定时器采用多线程线并且对 stTimeNode 结点回收，
 	#在回调期间可能会被重置掉，如果 id 为 0，在回调时会被丢掉
 	if iId == 0:
 		logger.error("timer dispatch id zero node=%s"%stTimeNode)
 		return
-	stQ   = g_stMsgQ[iId]
-	stMsg = PressMessage()	
-	stMsg.m_eType  = MsgQType.eMsgTimer
-	stMsg.m_stData = stTimeNode 
-	stQ.PushMsg(stMsg)
+	CommonMsg(g_stMsgQ[iId],MsgQType.eMsgTimer,stTimeNode)
+
+#nc、telnet 消息
+def ForwardNcTelnetMsg(iId,sData):
+	CommonMsg(g_stMsgQ[iId],MsgQType.eMsgNcTelnet,sData)
 
 #请求应答数据
 class ResData:
@@ -86,14 +90,6 @@ class MsgData:
 		self.m_eType     = eType
 		self.m_fDispatch = fDispatch
 
-#定时器回收链表
-class GCTimeLink:
-	def __init__(self):
-		self.m_stLock    = None 
-		self.m_stHead    = None
-		self.m_stTail    = None
-		self.m_iCount 	 = 0 
-
 #消息调度管理
 class MsgQueue:
 	def __init__(self,stPartsMgr):
@@ -107,8 +103,6 @@ class MsgQueue:
 		self.m_hResData     = {}
 		#session
 		self.m_iSession     = 0
-		#定时器结点回收链表
-		self.m_stTimeGCLink = GCTimeLink()
 		#加入一个 msg queue
 		AddMsgQ(self.GetThreadId(),self)
 		#注册定时器回调
@@ -139,25 +133,9 @@ class MsgQueue:
 	def GetThreadId(self):
 		return self.m_stPartsMgr.m_stThread.GetThreadId()
 
-	#获得一个定时器结点
-	def GetTimerNode(self):
-		stTimeNode = NetQueue.MsgPop(self.m_stTimeGCLink)
-		if stTimeNode != None:
-			return stTimeNode
-		return TimeMgr.TimeNode() 
-
-	#释放一个定时器结点
-	def ReleaseTimerNode(self,stTimeNode,fCb):
-		#TimeMgr.RemoveTimer 有可能返回 None 结点
-		if stTimeNode == None:
-			return
-		logger.debug("release timer %s cb=%s node=%s"%(stTimeNode.Log(),fCb,stTimeNode))
-		stTimeNode.Release()
-		NetQueue.AddTail(self.m_stTimeGCLink,stTimeNode)	
-
 	#添加定时器
 	def AddTimer(self,fCb,iTime,bLoop,stData):
-		stTimeNode = self.GetTimerNode()
+		stTimeNode = TimeMgr.TimeNode() 
 		iSession   = self.Call(fCb,None)
 		#外部调用定时器提供
 		stTimeNode.m_bLoop    = bLoop
@@ -182,13 +160,12 @@ class MsgQueue:
 			return
 		stData = self.m_hResData[iSession]
 		del self.m_hResData[iSession]
-		stTimeNode =self.m_stPartsMgr.m_stTimerMgr.RemoveTimer(self.GetThreadId(),iSession)
-		self.ReleaseTimerNode(stTimeNode,stData.m_fCb)
+		self.m_stPartsMgr.m_stTimerMgr.RemoveTimer(self.GetThreadId(),iSession)
 
 	#定时器回调
 	def TimerDispatchMsg(self,stTimeNode):
 		#stTimeNode = TimeMgr.TimeNode 
-		#定时器有可能返回时被取消了
+		#定时器有可能返回时被取消了		
 		if not self.m_hResData.has_key(stTimeNode.m_iSession):
 			logger.warning("timer res not found session=%d node=%s"%(stTimeNode.m_iSession,stTimeNode))
 			return True
@@ -200,7 +177,6 @@ class MsgQueue:
 			return
 		if not stTimeNode.m_bLoop:
 			del self.m_hResData[stTimeNode.m_iSession]
-			self.ReleaseTimerNode(stTimeNode,stData.m_fCb)
 
 	#注册接收到消息时所需数据
 	#param stMsgData=MsgData

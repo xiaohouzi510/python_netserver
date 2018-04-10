@@ -83,7 +83,6 @@ def FilterData(stQueue,sData):
 				stQueue.m_stUn.m_iLen  = iPackSize
 				stQueue.m_stUn.m_sData = ""
 				stQueue.m_stUn.m_iRead = 0
-
 		iNeed = stQueue.m_stUn.m_iLen - stQueue.m_stUn.m_iRead	
 		if iNeed > iLen:
 			stQueue.m_stUn.m_iRead = stQueue.m_stUn.m_iRead + iLen	

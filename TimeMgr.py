@@ -33,7 +33,7 @@ class TimeNode:
 		self.m_stCb 		= None
 
 		#定时器内部使用
-		self.m_stFather 	= None
+		self.m_stLink 		= None
 		self.m_iExpire  	= 0 	
 		self.m_stNext 		= None
 		self.m_stFront  	= None
@@ -69,12 +69,10 @@ class WheelTimerMgr:
 		self.Init()
 		#所有结点
 		self.m_hData      = {}
-		#转发时当前结点
-		self.m_stCurNode  = None 
-		#正在转发结点
-		self.m_stDisPNone = None
+		#转发时下一结点
+		self.m_stNextNode = None 
 
-		#获得当前时间，单位为10毫秒
+	#获得当前时间，单位为10毫秒
 	def GetCurTime(self):
 		return int(round(time.time() * 100))
 
@@ -97,9 +95,10 @@ class WheelTimerMgr:
 			self.m_szLevel.append([])
 			for j in range(0,TIME_LEVEL):
 				self.m_szLevel[i].append(TimeLink())
+
 	#尾插法添加一个节点
 	def AddTail(self,stTimeLink,stTimeNode):
-		stTimeNode.m_stFather = stTimeLink
+		stTimeNode.m_stLink = stTimeLink
 		if stTimeLink.m_stHead == None:
 			stTimeLink.m_stHead = stTimeNode
 			stTimeLink.m_stTail = stTimeNode
@@ -110,7 +109,7 @@ class WheelTimerMgr:
 
 	#头插法添加一个节点
 	def AddHead(self,stTimeLink,stTimeNode):
-		stTimeNode.m_stFather = stTimeLink
+		stTimeNode.m_stLink = stTimeLink
 		if stTimeLink.m_stHead == None:
 			stTimeLink.m_stHead = stTimeNode
 			stTimeLink.m_stTail = stTimeNode
@@ -194,19 +193,19 @@ class WheelTimerMgr:
 	#转发定时器消息
 	def DispatchList(self,stTimeNode):
 		while stTimeNode != None:
-			self.m_stCurNode = stTimeNode.m_stNext
+			self.m_stNextNode = stTimeNode.m_stNext
 			if stTimeNode.m_bLoop:
 				stTimeNode.Reset()
 				stTimeNode.m_iExpire = self.GetExpire(stTimeNode.m_iTime)
 				self.AddNode(stTimeNode)
 			else:
 				self.RemoveSession(stTimeNode.m_iId,stTimeNode.m_iSession)
-			self.m_stDisPNone = stTimeNode	
 			# logger.debug("dispatch %s node=%s"%(stTimeNode.Log(),stTimeNode))
 			self.UnLock()
 			MsgQueue.ForwardTimerMsg(stTimeNode)
 			self.Lock()
-			stTimeNode = self.m_stCurNode
+			stTimeNode = self.m_stNextNode
+		self.m_stNextNode = None
 
 	#添加定时器
 	def AddTimer(self,stTimeNode):	
@@ -251,26 +250,21 @@ class WheelTimerMgr:
 			return
 		stTimeNode = self.RemoveSession(iId,iSession)
 		self.RemoveNode(stTimeNode)
-		#定时器等于当前结点，当前结点要指向下一结点
-		if stTimeNode == self.m_stCurNode: 
-			self.m_stCurNode = stTimeNode.m_stNext	
-			logger.error("timer node equal curnode id=%d session=%d node=%s"%(iId,iSession,stTimeNode))
-		#当前结点等于正在转发结点，该结点不可以回收，防止被处于转发期间被重用，可查看 MsgQueue.ReleaseTimerNode 函数
-		if stTimeNode == self.m_stDisPNone:
-			logger.error("timer equal dispnode id=%d session=%d node=%s"%(iId,iSession,stTimeNode))
-			stTimeNode = None
+		#定时器等于下一结点，下一结点要指向下下一结点
+		if stTimeNode == self.m_stNextNode: 
+			self.m_stNextNode = stTimeNode.m_stNext	
+			logger.error("timer node equal nextnode id=%d session=%d node=%s"%(iId,iSession,stTimeNode))
 		logger.debug("remove timer id=%d session=%d node=%s"%(iId,iSession,stTimeNode))
 		self.UnLock()
-		return stTimeNode
 
 	#移除一个结点
 	def RemoveNode(self,stTimeNode):
 		if stTimeNode.m_stFront != None:
 			stTimeNode.m_stFront.m_stNext = stTimeNode.m_stNext
 		else:
-			stTimeNode.m_stFather.m_stHead = stTimeNode.m_stNext
+			stTimeNode.m_stLink.m_stHead = stTimeNode.m_stNext
 
 		if stTimeNode.m_stNext != None:
 			stTimeNode.m_stNext.m_stFront = stTimeNode.m_stFront
 		else:
-			stTimeNode.m_stFather.m_stTail = stTimeNode.m_stFront	
+			stTimeNode.m_stLink.m_stTail = stTimeNode.m_stFront	

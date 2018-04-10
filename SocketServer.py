@@ -34,9 +34,11 @@ class SockType:
 	eSockListen     = 1 		#监听
 	eSockConnecting = 3 		#三次握手中
 	eSockConnected  = 4 		#已成功建立连接
+	eSockClosing    = 5 		#正在关闭中
 
 #执行 cmd 返回码
 class CmdErrno:
+	eCmdInvalid  = -2
 	eCmdError    = -1
 	eCmdSuccess  = 0
 	eCmdListen   = 1
@@ -167,8 +169,14 @@ class SocketServer:
 		self.m_stFdLock   = ThreadLock.ThreadLock()
 		#生成 fd，系统 fd 用 iFileNo 表示
 		self.m_iFdAlloc   = 0
+		#epoll wait time
+		self.m_iWaitTime  = -1 
 		#初始化
 		self.InitServer()
+
+	#设置 eopll 等时间，单线程情况会直接返回，多线程要设置为 -1 
+	def SetWaitTime(self,iTime):
+		self.m_iWaitTime = iTime
 
 	#生成 fd
 	def MakeFd(self):
@@ -240,14 +248,17 @@ class SocketServer:
 	def PushCmd(self,stCmd):
 		NetQueue.AddTail(self.m_stCmd,stCmd)
 		#唤醒 epoll
-		self.m_stRdPipe.send(['C'])	
+		self.m_iWaitTime != 0 and self.m_stRdPipe.send(['C'])
 
 	#sock 循环
 	def ServerPoll(self):
 		stSockMsg = SockMessage()
 		stSockMsg.m_eType = self.SockPoll(stSockMsg)	
-		if stSockMsg.m_eType != CmdErrno.eCmdSuccess:
+		if stSockMsg.m_eType == CmdErrno.eCmdInvalid:
+			return False
+		elif stSockMsg.m_eType != CmdErrno.eCmdSuccess:
 			MsgQueue.ForwardSockMsg(stSockMsg)
+		return True
 
 	#server 循环
 	def SockPoll(self,stResult):
@@ -267,12 +278,12 @@ class SocketServer:
 					self.m_iCheckCtrl = 0
 			#没有未完成事件
 			if self.m_iEventCount == self.m_iEventIndex:
-				self.m_szTmpEvent  = self.m_stEpoll.poll() 
+				self.m_szTmpEvent  = self.m_stEpoll.poll(self.m_iWaitTime) 
 				self.m_iCheckCtrl  = 1
 				self.m_iEventIndex = 0
 				self.m_iEventCount = len(self.m_szTmpEvent)
 				if self.m_iEventCount == 0:
-					return CmdErrno.eCmdSuccess
+					return CmdErrno.eCmdInvalid 
 			iFileNo,iEvent = self.m_szTmpEvent[self.m_iEventIndex]
 			self.m_iEventIndex = self.m_iEventIndex + 1
 			#管道数据只负责唤醒 epoll，管道未用做队列，因为没有指针
@@ -336,7 +347,7 @@ class SocketServer:
 	#发送 tcp 数据
 	def SendTcp(self,stFd,stResult):
 		#类型不为 SockType.eSockConnected，不可以发送数据
-		if stFd.m_eType != SockType.eSockConnected:
+		if stFd.m_eType != SockType.eSockConnected and stFd.m_eType != SockType.eSockClosing:
 			return  CmdErrno.eCmdSuccess
 		stResult.m_iFd = stFd.m_iFd
 		while stFd.m_stWbList.m_stHead != None:
@@ -359,6 +370,8 @@ class SocketServer:
 			stFd.m_stWbList.m_stHead = stNode.m_stNext
 		stFd.m_stWbList.m_stTail = None
 		self.EpollWrite(stFd.m_stSock.fileno(),False)
+		if stFd.m_eType == SockType.eSockClosing:
+			self.ForceClose(stFd.m_iFd,0,"manual closure socket")
 		return CmdErrno.eCmdSuccess
 
 	#发送 udp 数据
@@ -539,7 +552,7 @@ class SocketServer:
 			stFd.m_eType = SockType.eSockConnecting
 			return CmdErrno.eCmdSuccess
 		else:
-			stFd.m_eType   = SockType.eSockConnected
+			stFd.m_eType = SockType.eSockConnected
 			return CmdErrno.eCmdConnect
 
 	#处理监听
@@ -580,23 +593,26 @@ class SocketServer:
 			stCmd.m_stSock.close()
 			return CmdErrno.eCmdClose
 		stFd = self.CreateSockData(stCmd.m_iFd,stCmd.m_iId,socket.IPPROTO_UDP,stCmd.m_stSock) 
-		stFd.m_eType  = SockType.eSockConnected
+		stFd.m_eType = SockType.eSockConnected
 		return CmdErrno.eCmdSuccess
 
 	#udp 绑定发送地址
 	def DealUdpConnect(self,stCmd,stResult):
-		stData = self.GetFdData(stCmd.m_iFd)
-		if stData == None:
+		stFd = self.GetFdData(stCmd.m_iFd)
+		if stFd == None:
 			logger.error("udp connect not found data fd=%d id=%d"%(stCmd.m_iFd,stCmd.m_iId))
 			return CmdErrno.eCmdError
-		stData.m_stUdpAddr = stCmd.m_stUdpAddr
+		stFd.m_stUdpAddr = stCmd.m_stUdpAddr
 		return CmdErrno.eCmdSuccess
 
 	#关闭 socket
-	def DealCloseSock(self,stCmd,Stresult):
-		stData = self.GetFdData(stCmd.m_iFd)
-		if stData == None:
+	def DealCloseSock(self,stCmd,stResult):
+		stFd = self.GetFdData(stCmd.m_iFd)
+		if stFd == None:
 			logger.error("colse sock not found data fd=%d id=%d"%(stCmd.m_iFd,stCmd.m_iId))
 			return CmdErrno.eCmdSuccess
-		self.ForceClose(stCmd.m_iFd,0,"manual closure socket")
+		if self.BufferEmpty(stFd.m_stWbList): 
+			self.ForceClose(stCmd.m_iFd,0,"manual closure socket")
+		else:
+			stFd.m_eType = SockType.eSockClosing 
 		return CmdErrno.eCmdSuccess
