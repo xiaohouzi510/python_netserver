@@ -19,13 +19,24 @@ class http_statu:
 #一个 http 数据
 class http_data:
 	def __init__(self):
-		self.m_statu   = http_statu.ehttp_none
-		self.m_header  = {} 
-		self.m_sz 	   = 0 
-		self.m_body    = "" 
-		self.m_surplus = "" 
-		self.m_fd 	   = 0
-		self.m_addr    = None
+		self.m_statu      = http_statu.ehttp_none
+		self.m_header     = {} 
+		self.m_sz 	      = 0 
+		self.m_body       = "" 
+		self.m_surplus    = "" 
+		self.m_fd 	      = 0
+		self.m_addr       = None
+		self.m_statu_line = None
+
+#解析 url 参数
+def parse_url(s_str):
+	start_index = str.find(s_str,"?")
+	if start_index == -1:
+		return ""
+	end_index = str.find(s_str,"HTTP")
+	if end_index == -1:
+		return "" 
+	return s_str[start_index+1:end_index-1]
 
 #读取头部
 def recv_header(surplus,recv_data):
@@ -107,6 +118,7 @@ def deal_head(self,h_data,recv_data):
 	code,header_array,surplus = recv_header(h_data.m_surplus,recv_data)
 	if header_array != None:
 		parse_header(header_array,h_data.m_header)
+		h_data.m_statu_line = header_array[0]
 	if surplus != None:
 		h_data.m_surplus = surplus
 	if code != 0:
@@ -135,6 +147,7 @@ def deal_chunked_size(self,h_data,recv_data):
 		h_data.m_statu = http_statu.ehttp_body
 	elif h_data.m_sz == 0:
 		h_data.m_statu = http_statu.echunk_tail
+		h_data.m_sz = len(h_data.m_surplus)
 	deal_http_data(h_data,"")
 
 #处理 chunked 数据部份
@@ -164,4 +177,6 @@ def deal_iden(self,h_data,recv_data):
 	if len(h_data.m_surplus) < h_data.m_sz:
 		return
 	h_data.m_body = h_data.m_surplus
+	if h_data.m_sz == 0:
+		h_data.m_body = parse_url(h_data.m_statu_line) 
 	self.recv_finish(h_data)
