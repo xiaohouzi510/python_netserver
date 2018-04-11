@@ -68,27 +68,44 @@ class WorkThread():
 		return self._iThreadId
 
 #http 回调函数
-def http_get_data():
+def http_get_data1():
+	global g_index
+	global g_body
+	g_index += 1
+	if g_index == 1:
+		return g_body
+	g_index = 0
+	return None
+
+#http 回调函数
+def http_get_data2():
 	global g_index
 	g_index += 1
 	if g_index == 1:
-		return "name=libinbin&"
+		return "name=huang&" 
 	elif g_index == 2:
-		return "id=10086&"
+		return "id=4433&"
 	elif g_index == 3:
-		return "sex=female"
+		return "sex=man"
 	g_index = 0
 	return None
 
 #http 接收到数据
 def http_recv_package(body,addr,fd):
-	print("fd=%d recv=[%s]"%(fd,url.parse_query(body)))
-	g_recv_mgr.http_response(fd,body)
+	global g_body
+	global g_type
+	g_body = body
+	print("fd=%d recv=[%s]"%(fd,body))
+	g_type += 1
+	g_type %= 3
+	g_recv_mgr.http_response(fd,http_get_data1)
 
 g_index    = 0
 g_body     = None
 g_recv_mgr = None 
 g_stWork   = WorkThread()
+g_body 	   = ""
+g_type     = 1
 
 #主函数
 if __name__ == "__main__":

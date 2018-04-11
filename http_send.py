@@ -32,7 +32,10 @@ class http_send:
 
 	#接收到数据回调
 	def recv_data_cb(self,sock_msg,ud):
-		http_internal.deal_http_data(self,self.m_send_data[sock_msg.m_iFd],sock_msg.m_sData)
+		code = http_internal.deal_http_data(self,self.m_send_data[sock_msg.m_iFd],sock_msg.m_sData)
+		if code != 0:
+			self.m_parts_mgr.m_stNetServer.CloseSock(sock_msg.m_iFd)
+			print("response error=%d fd=%d"%(code,sock_msg.m_iFd))
 
 	#fd 关闭回调
 	def close_cb(self,fd_data):
@@ -81,3 +84,4 @@ class http_send:
 		request_header = "%s %s HTTP/1.1\r\n%scontent-length:%d\r\n\r\n"%(s_data.m_method,s_data.m_url,header_content,length)
 		self.m_parts_mgr.m_stNetServer.SendData(fd,request_header)
 		length != 0 and self.m_parts_mgr.m_stNetServer.SendData(fd,s_data.m_content)
+		s_data.m_header = {}

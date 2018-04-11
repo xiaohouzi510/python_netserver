@@ -69,7 +69,7 @@ class WorkThread():
 
 #接收 http 数据
 def recv_http_data(body):
-	print("%s"%(body))
+	print("recv=%s"%(body))
 
 g_index    = 0
 g_body     = None
@@ -91,7 +91,8 @@ if __name__ == "__main__":
 	g_send_mgr = http_send.http_send(g_stWork.m_stPartsMgr)
 	#发送 http 数据
 	g_send_mgr.http_post_data("192.168.1.240:8889",{"name":"libinbin","id":"10086"},recv_http_data)
-	g_send_mgr.http_get_data("192.168.1.240:8889","name=libinbin&id=10086",recv_http_data)
+	g_send_mgr.http_get_data("192.168.1.240:8889","name=xiaohouzi&id=12306",recv_http_data)
+	g_send_mgr.http_get_data("192.168.1.240:8889","name=huang&id=3306",recv_http_data)
 	#设置 epoll_wait 等时间为 0
 	g_stWork.m_stPartsMgr.m_stSockServer.SetWaitTime(0)
 	while True:

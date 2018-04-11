@@ -61,7 +61,12 @@ class http_recv:
 
 	#http 收到数据
 	def recv_http_data_cb(self,sock_msg,ud):
-		http_internal.deal_http_data(self,self.m_http_data[sock_msg.m_iFd],sock_msg.m_sData)
+		h_data = self.m_http_data[sock_msg.m_iFd]
+		code   = http_internal.deal_http_data(self,h_data,sock_msg.m_sData)
+		#有错误码情况
+		if code != 0:
+			h_data.m_statu = http_internal.http_statu.ehttp_none
+			self.http_response(sock_msg.m_iFd,None,code)
 
 	#接收完成
 	def recv_finish(self,h_data):
