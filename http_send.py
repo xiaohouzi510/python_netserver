@@ -21,6 +21,7 @@ class http_send:
 	def __init__(self,parts_mgr):
 		self.m_parts_mgr = parts_mgr
 		self.m_send_data = {}
+		self.m_check_ver = False 
 
 	#连接成功，回调
 	def connect_cb(self,sock_msg):
