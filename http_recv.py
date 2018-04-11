@@ -54,6 +54,7 @@ class http_recv:
 		self.m_parts_mgr = parts_mgr
 		self.m_http_data = {}   		#所有正在处理的 http 客户端数据
 		self.m_cb_fun 	 = cb_fun
+		self.m_check_ver = True
 
 	#开始
 	def start_server(self,ip,port):

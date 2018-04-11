@@ -4,6 +4,7 @@
 import socket
 import sys
 import struct
+import re
 
 #打包一个数据
 def PackData(sData):

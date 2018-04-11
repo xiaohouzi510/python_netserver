@@ -126,6 +126,22 @@ def deal_http_data(self,h_data,sData):
 		print("recv statu fd=%d"%(h_data.m_fd))
 	return code
 
+#验证版本
+def check_version(req_line):
+	obj = re.match("^([^\s]+)\s+(.*)\s+HTTP/([\d\.]+)$",req_line)
+	#method、url、version
+	if obj == None or len(obj.groups()) != 3:
+		return False
+	methond,s_url,http_version = obj.groups()[0],obj.groups()[1],obj.groups()[2]
+	#防止字符串不能转成浮点数
+	try:
+		http_version = float(http_version)
+	except:
+		return False
+	if http_version < 1.0 or http_version > 1.1:
+		return False 
+	return True
+
 #处理头部
 def deal_head(self,h_data,recv_data):
 	code,header_array,surplus = recv_header(h_data.m_surplus,recv_data)
@@ -133,6 +149,9 @@ def deal_head(self,h_data,recv_data):
 	if code == -1:
 		return 413
 	if header_array != None:
+		#版本号不正确
+		if self.m_check_ver and not check_version(header_array[0]):
+			return 400
 		i_error = parse_header(header_array,h_data.m_header)
 		#客户端请求语法出错
 		if i_error != 0:
