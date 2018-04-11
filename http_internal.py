@@ -151,7 +151,7 @@ def deal_head(self,h_data,recv_data):
 	if header_array != None:
 		#版本号不正确
 		if self.m_check_ver and not check_version(header_array[0]):
-			return 400
+			return 505 
 		i_error = parse_header(header_array,h_data.m_header)
 		#客户端请求语法出错
 		if i_error != 0:
