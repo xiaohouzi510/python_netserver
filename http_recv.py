@@ -71,7 +71,7 @@ class http_recv:
 
 	#接收完成
 	def recv_finish(self,h_data):
-		self.m_cb_fun(h_data.m_body,h_data.m_addr,h_data.m_fd)
+		self.m_cb_fun(h_data.m_body,h_data.m_addr,h_data.m_fd,h_data.m_header)
 
 	#fd 关闭回调
 	def close_cb(self,fd_data):

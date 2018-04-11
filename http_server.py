@@ -91,11 +91,12 @@ def http_get_data2():
 	return None
 
 #http 接收到数据
-def http_recv_package(body,addr,fd):
+def http_recv_package(body,addr,fd,header):
 	global g_body
 	global g_type
 	g_body = body
-	print("fd=%d recv=[%s]"%(fd,body))
+	print("%s"%(header))
+	print("fd=%d %s\n"%(fd,body))
 	g_type += 1
 	g_type %= 3
 	g_recv_mgr.http_response(fd,http_get_data1)

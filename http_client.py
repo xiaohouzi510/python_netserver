@@ -68,8 +68,9 @@ class WorkThread():
 		return self._iThreadId
 
 #接收 http 数据
-def recv_http_data(body):
-	print("recv=%s"%(body))
+def recv_http_data(body,header):
+	print("%s"%header)	
+	print("%s\n"%(body))
 
 g_index    = 0
 g_body     = None

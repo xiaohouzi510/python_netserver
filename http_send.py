@@ -47,7 +47,7 @@ class http_send:
 
 	#接收完成
 	def recv_finish(self,s_data):
-		s_data.m_fun_cb(s_data.m_body)
+		s_data.m_fun_cb(s_data.m_body,s_data.m_header)
 		self.m_parts_mgr.m_stNetServer.CloseSock(s_data.m_fd)
 
 	#发送 get http 数据，content 为字符串类型
