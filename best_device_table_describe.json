@@ -1,0 +1,16 @@
+[
+	{"key":"brand", 			"type":"varchar", "len":128,  "comment":"机型品牌"},
+	{"key":"device", 			"type":"varchar", "len":128,  "comment":"设备型号"},
+	{"key":"cpu",		    	"type":"varchar", "len":128,  "comment":"cpu名称"},
+	{"key":"core",				"type":"varchar", "len":128,  "comment":"4核，双核"},
+	{"key":"frequency",			"type":"varchar", "len":128,  "comment":"cpu主频"},
+	{"key":"framework",			"type":"varchar", "len":128,  "comment":"x86"},
+	{"key":"gpu",				"type":"varchar", "len":128,  "comment":"gpu，非必填"},
+	{"key":"rom",				"type":"varchar", "len":128,  "comment":"磁盘大小"},
+	{"key":"ram",				"type":"varchar", "len":128,  "comment":"运存空间"},
+	{"key":"uuid",				"type":"varchar", "len":128,  "comment":"设备唯一参数"},
+	{"key":"os_version", 		"type":"varchar", "len":128,  "comment":"系统版本"},
+	{"key":"resolution",		"type":"varchar", "len":128,  "comment":"分辨率"},
+	{"key":"client_time",		"type":"varchar", "len":128,  "comment":"客户端时间，YYYY-MM-DD HH:MM:SS"},
+	{"key":"create_time",		"type":"varchar", "len":128,  "comment":"数据插入数据库时间"}
+]

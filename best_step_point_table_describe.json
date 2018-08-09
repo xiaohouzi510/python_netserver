@@ -1,0 +1,15 @@
+[
+	{"key":"uuid", 			"type":"varchar", "len":128,  "comment":"设备ID，用来标识一个设备"},
+	{"key":"chan_merchant", "type":"varchar", "len":128,  "comment":"户渠道"},
+	{"key":"os",		    "type":"tinyint", "len":4,   "comment":"0：windows/unity，1：android；2：iOS"},
+	{"key":"os_version",	"type":"varchar", "len":128,	 "comment":"统版本"},
+	{"key":"game_version",	"type":"varchar", "len":128,  "comment":"户端版本号"},
+	{"key":"client_time",	"type":"varchar", "len":128,  "comment":"事件发生时间"},
+	{"key":"device",		"type":"varchar", "len":128,  "comment":"手机设备号"},
+	{"key":"resolution",	"type":"varchar", "len":128,  "comment":"设备分辨率"},
+	{"key":"nettype",		"type":"tinyint", "len":1,   "comment":"0：无网络；1:2G；2:3G；3:4G；9：wifi"},
+	{"key":"point",			"type":"varchar", "len":128,  "comment":"件节点"},
+	{"key":"patch_version", "type":"varchar", "len":128,  "comment":"客户端补丁版本号"},
+	{"key":"create_time",	"type":"varchar", "len":128,  "comment":"据插入数据库时间"},
+	{"key":"eventid",		"type":"varchar", "len":128,  "comment":"事件名称"}
+]

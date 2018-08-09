@@ -1,0 +1,9 @@
+{
+    "host":"192.168.1.225",
+    "dbname" : "xllogs_analyze_best",
+    "username":"root",
+    "pwd" : "",
+    "port" : 3306,
+    "charset" : "utf8",
+    "timeout" : 10000
+}
