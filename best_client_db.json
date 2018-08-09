@@ -5,5 +5,5 @@
     "pwd" : "",
     "port" : 3306,
     "charset" : "utf8",
-    "timeout" : 50000
+    "timeout" : 10000
 }
