@@ -67,33 +67,32 @@ def FilterData(stQueue,sData):
 	#没有未完成的包
 	if stQueue.m_stUn.m_iRead == -2:
 		PushMore(stQueue,sData,iLen)
-	else:
-		#sData 表示已被使用过多少长度
-		iUse = 0
-		if stQueue.m_stUn.m_iRead == -1:
-			iReadLen = len(stQueue.m_stUn.m_sData)
-			#小于 4 字节的数据，表示还未达到包长度
-			if iReadLen + iLen < 4:
-				stQueue.m_stUn.m_sData = stQueue.m_stUn.m_sData + sData
-				return
-			else:
-				iUse = 4 - iReadLen
-				iLen = iLen - iUse
-				iPackSize = HeadSize(stQueue.m_stUn.m_sData + sData[:iUse])
-				stQueue.m_stUn.m_iLen  = iPackSize
-				stQueue.m_stUn.m_sData = ""
-				stQueue.m_stUn.m_iRead = 0
-		iNeed = stQueue.m_stUn.m_iLen - stQueue.m_stUn.m_iRead	
-		if iNeed > iLen:
-			stQueue.m_stUn.m_iRead = stQueue.m_stUn.m_iRead + iLen	
-			stQueue.m_stUn.m_sData = stQueue.m_stUn.m_sData + sData[iUse:]
+		return
+	#sData 表示已被使用过多少长度
+	iUse = 0
+	if stQueue.m_stUn.m_iRead == -1:
+		iReadLen = len(stQueue.m_stUn.m_sData)
+		#小于 4 字节的数据，表示还未达到包长度
+		if iReadLen + iLen < 4:
+			stQueue.m_stUn.m_sData = stQueue.m_stUn.m_sData + sData
 			return
-		iLen = iLen - iNeed
-		sPackData = stQueue.m_stUn.m_sData + sData[iUse:(iUse + iNeed)]
-		iUse = iUse + iNeed
-		ResetUn(stQueue)
-		#链表中加入一个包
-		PushData(stQueue,sPackData)
-		if iLen <= 0:
-			return
-		PushMore(stQueue,sData[iUse:],iLen)
+		iUse = 4 - iReadLen
+		iLen = iLen - iUse
+		iPackSize = HeadSize(stQueue.m_stUn.m_sData + sData[:iUse])
+		stQueue.m_stUn.m_iLen  = iPackSize
+		stQueue.m_stUn.m_sData = ""
+		stQueue.m_stUn.m_iRead = 0
+	iNeed = stQueue.m_stUn.m_iLen - stQueue.m_stUn.m_iRead	
+	if iNeed > iLen:
+		stQueue.m_stUn.m_iRead = stQueue.m_stUn.m_iRead + iLen	
+		stQueue.m_stUn.m_sData = stQueue.m_stUn.m_sData + sData[iUse:]
+		return
+	iLen = iLen - iNeed
+	sPackData = stQueue.m_stUn.m_sData + sData[iUse:(iUse + iNeed)]
+	iUse = iUse + iNeed
+	ResetUn(stQueue)
+	#链表中加入一个包
+	PushData(stQueue,sPackData)
+	if iLen <= 0:
+		return
+	PushMore(stQueue,sData[iUse:],iLen)
