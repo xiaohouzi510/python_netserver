@@ -95,12 +95,11 @@ class http_recv:
 			self.m_parts_mgr.m_stNetServer.SendData(fd,"transfer-encoding: chunked\r\n")
 			while True:	
 				s_str = body()
-				if s_str != None:
-					self.m_parts_mgr.m_stNetServer.SendData(fd,"\r\n%x\r\n"%(len(s_str)))
-					self.m_parts_mgr.m_stNetServer.SendData(fd,s_str)
-				else:
+				if s_str == None:
 					self.m_parts_mgr.m_stNetServer.SendData(fd,"\r\n0\r\n\r\n")
 					break
+				self.m_parts_mgr.m_stNetServer.SendData(fd,"\r\n%x\r\n"%(len(s_str)))
+				self.m_parts_mgr.m_stNetServer.SendData(fd,s_str)
 		else:
 			self.m_parts_mgr.m_stNetServer.SendData(fd,"\r\n")
 		self.m_parts_mgr.m_stNetServer.CloseSock(fd)
